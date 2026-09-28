@@ -1,0 +1,45 @@
+# Environment / secrets
+.env
+*.env
+!.env.example
+profiles.yml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# dbt
+dbt_football/target/
+dbt_football/dbt_packages/
+dbt_football/logs/
+.user.yml
+
+# Snowflake
+*.p8
+
+# Node / React
+dashboards/react/node_modules/
+dashboards/react/dist/
+dashboards/react/build/
+dashboards/react/.env*
+!dashboards/react/.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+
+# Data / logs
+*.log
+data/raw/
+data/tmp/
