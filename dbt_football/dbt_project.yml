@@ -1,0 +1,38 @@
+name: 'football_analytics'
+version: '1.0.0'
+config-version: 2
+
+profile: 'football_analytics'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+snapshot-paths: ["snapshots"]
+macro-paths: ["macros"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  football_analytics:
+    staging:
+      +materialized: view
+      +schema: STAGING
+    intermediate:
+      +materialized: view
+      +schema: INTERMEDIATE
+    marts:
+      +materialized: table
+      +schema: MARTS
+      dimensions:
+        +tags: ['dimension']
+      facts:
+        +tags: ['fact']
+      analytics:
+        +tags: ['analytics']
+
+vars:
+  # Competition scope for the current build. A list so more competitions can
+  # be added later without changing any model SQL.
+  active_competition_codes: ['PL']

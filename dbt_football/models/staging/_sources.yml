@@ -1,0 +1,44 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ env_var('SNOWFLAKE_DATABASE', 'FOOTBALL_ANALYTICS') }}"
+    schema: RAW
+    description: >
+      Landing tables written by the Python ingestion pipeline
+      (src/football_pipeline). Each row is a raw API payload (VARIANT) plus
+      load metadata; staging models are responsible for flattening/typing.
+    tables:
+      - name: raw_competitions
+        description: One row per competition per ingestion run.
+        columns:
+          - name: competition_code
+            tests: [not_null]
+          - name: run_id
+            tests: [not_null]
+
+      - name: raw_teams
+        description: One row per team per ingestion run.
+        columns:
+          - name: competition_code
+            tests: [not_null]
+          - name: run_id
+            tests: [not_null]
+
+      - name: raw_matches
+        description: One row per match per ingestion run.
+        columns:
+          - name: match_id
+            tests: [not_null]
+          - name: competition_code
+            tests: [not_null]
+          - name: season
+            tests: [not_null]
+
+      - name: raw_standings
+        description: One row per full standings-table snapshot per ingestion run.
+        columns:
+          - name: competition_code
+            tests: [not_null]
+          - name: season
+            tests: [not_null]

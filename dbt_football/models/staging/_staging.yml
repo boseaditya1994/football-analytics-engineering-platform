@@ -1,0 +1,59 @@
+version: 2
+
+models:
+  - name: stg_competitions
+    description: One row per competition, latest ingested metadata.
+    columns:
+      - name: competition_code
+        tests: [not_null, unique]
+      - name: competition_id
+        tests: [not_null]
+
+  - name: stg_teams
+    description: One row per team per competition per season, latest ingested metadata.
+    columns:
+      - name: team_id
+        tests: [not_null]
+      - name: competition_code
+        tests: [not_null]
+      - name: season
+        tests: [not_null]
+
+  - name: stg_matches
+    description: One row per match, latest ingested status/score.
+    columns:
+      - name: match_id
+        tests: [not_null, unique]
+      - name: home_team_id
+        tests: [not_null]
+      - name: away_team_id
+        tests: [not_null]
+      - name: match_status
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['SCHEDULED', 'TIMED', 'IN_PLAY', 'PAUSED', 'FINISHED', 'SUSPENDED', 'POSTPONED', 'CANCELLED', 'AWARDED']
+      - name: full_time_home_goals
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+              config:
+                severity: warn
+      - name: full_time_away_goals
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+              config:
+                severity: warn
+
+  - name: stg_standings
+    description: API-reported standings table, flattened - used for reconciliation only.
+    columns:
+      - name: team_id
+        tests: [not_null]
+      - name: api_position
+        tests: [not_null]
+      - name: points
+        tests: [not_null]
