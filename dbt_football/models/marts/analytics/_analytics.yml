@@ -1,0 +1,42 @@
+version: 2
+
+models:
+  - name: mart_league_table
+    description: Current league table per season, with recent form.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['team_id', 'season']
+    columns:
+      - name: team_id
+        tests: [not_null]
+      - name: league_position
+        tests: [not_null]
+
+  - name: mart_league_progression
+    description: League table after every matchweek, with position/points deltas.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['team_id', 'season', 'matchweek']
+
+  - name: mart_team_form
+    description: Rolling last-5/last-10 form as of each match.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['match_id', 'team_id']
+
+  - name: mart_home_away_performance
+    description: Home vs. away performance split per team per season.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['team_id', 'season']
+
+  - name: mart_goal_analysis
+    description: Scoring/conceding profile per team per season.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['team_id', 'season']
