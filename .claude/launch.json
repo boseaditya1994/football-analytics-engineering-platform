@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dashboard-react",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "dashboards/react", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}
