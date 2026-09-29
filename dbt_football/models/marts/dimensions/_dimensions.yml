@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: dim_team
+    description: One row per team.
+    columns:
+      - name: team_id
+        tests: [not_null, unique]
+      - name: team_name
+        tests: [not_null]
+
+  - name: dim_season
+    description: One row per (competition_code, season).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['competition_code', 'season']
+    columns:
+      - name: season
+        tests: [not_null]
+
+  - name: dim_matchweek
+    description: One row per (competition_code, season, matchweek).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['competition_code', 'season', 'matchweek']
+
+  - name: dim_date
+    description: Standard calendar date dimension.
+    columns:
+      - name: date_key
+        tests: [not_null, unique]
