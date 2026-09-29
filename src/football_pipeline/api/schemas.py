@@ -30,7 +30,6 @@ class TeamListEnvelope(_PermissiveModel):
 
 
 class MatchListEnvelope(_PermissiveModel):
-    count: int
     matches: list[dict[str, Any]]
 
 
