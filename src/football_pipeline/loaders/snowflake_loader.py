@@ -4,17 +4,50 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import snowflake.connector
 import structlog
+from cryptography.hazmat.primitives import serialization
 
 from football_pipeline.config.settings import Settings
 
 logger = structlog.get_logger(__name__)
 
 
+def _load_private_key_der(path: str, passphrase: str) -> bytes:
+    key_bytes = Path(path).read_bytes()
+    private_key = serialization.load_pem_private_key(
+        key_bytes, password=passphrase.encode() if passphrase else None
+    )
+    return private_key.private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+
+
 def connect(settings: Settings) -> snowflake.connector.SnowflakeConnection:
+    """Key-pair auth (SNOWFLAKE_PRIVATE_KEY_PATH) is preferred: it doesn't
+    trigger interactive MFA, so it works for non-interactive callers (this
+    pipeline, the dashboard API, CI). Falls back to password auth, which on
+    an MFA-enforced account will prompt for/require Duo approval.
+    """
+    if settings.snowflake_private_key_path:
+        private_key_der = _load_private_key_der(
+            settings.snowflake_private_key_path, settings.snowflake_private_key_passphrase
+        )
+        return snowflake.connector.connect(
+            account=settings.snowflake_account,
+            user=settings.snowflake_user,
+            private_key=private_key_der,
+            role=settings.snowflake_role,
+            warehouse=settings.snowflake_warehouse,
+            database=settings.snowflake_database,
+            schema="RAW",
+        )
+
     return snowflake.connector.connect(
         account=settings.snowflake_account,
         user=settings.snowflake_user,

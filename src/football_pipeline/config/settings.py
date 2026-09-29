@@ -18,7 +18,15 @@ class Settings(BaseSettings):
 
     snowflake_account: str = Field("", alias="SNOWFLAKE_ACCOUNT")
     snowflake_user: str = Field("", alias="SNOWFLAKE_USER")
+    # Password auth triggers interactive MFA (Duo) on accounts that require it,
+    # which blocks non-interactive callers (this API, CI). Prefer key-pair auth
+    # (SNOWFLAKE_PRIVATE_KEY_PATH) - password stays supported as a local-dev
+    # fallback for interactive use only.
     snowflake_password: str = Field("", alias="SNOWFLAKE_PASSWORD")
+    snowflake_private_key_path: str = Field("", alias="SNOWFLAKE_PRIVATE_KEY_PATH")
+    snowflake_private_key_passphrase: str = Field(
+        "", alias="SNOWFLAKE_PRIVATE_KEY_PASSPHRASE"
+    )
     snowflake_role: str = Field("FOOTBALL_ANALYTICS_ROLE", alias="SNOWFLAKE_ROLE")
     snowflake_warehouse: str = Field("FOOTBALL_ANALYTICS_WH", alias="SNOWFLAKE_WAREHOUSE")
     snowflake_database: str = Field("FOOTBALL_ANALYTICS", alias="SNOWFLAKE_DATABASE")

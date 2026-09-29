@@ -12,7 +12,13 @@ football_analytics:
       type: snowflake
       account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
       user: "{{ env_var('SNOWFLAKE_USER') }}"
-      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      # Key-pair auth (preferred - doesn't trigger interactive MFA):
+      authenticator: SNOWFLAKE_JWT
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+      private_key_passphrase: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PASSPHRASE', '') }}"
+      # Fallback for interactive/local use on an MFA-enforced account:
+      # comment out the three lines above and uncomment this one instead.
+      # password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
       role: "{{ env_var('SNOWFLAKE_ROLE', 'FOOTBALL_ANALYTICS_ROLE') }}"
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'FOOTBALL_ANALYTICS_WH') }}"
       database: "{{ env_var('SNOWFLAKE_DATABASE', 'FOOTBALL_ANALYTICS') }}"

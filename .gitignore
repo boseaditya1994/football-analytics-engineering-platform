@@ -25,6 +25,7 @@ dbt_football/logs/
 
 # Snowflake
 *.p8
+.snowflake_keys/
 
 # Node / React
 dashboards/react/node_modules/
