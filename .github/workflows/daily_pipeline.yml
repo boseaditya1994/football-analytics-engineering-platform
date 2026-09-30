@@ -1,0 +1,61 @@
+name: Daily EPL pipeline
+
+on:
+  schedule:
+    # 06:00 UTC daily - after most EPL matches (evening kickoffs UK time)
+    # have finished and results have settled.
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  pipeline:
+    name: Ingest, build, reconcile
+    runs-on: ubuntu-latest
+    env:
+      FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PRIVATE_KEY_PATH: ${{ github.workspace }}/snowflake_key.p8
+      SNOWFLAKE_ROLE: FOOTBALL_ANALYTICS_ROLE
+      SNOWFLAKE_WAREHOUSE: FOOTBALL_ANALYTICS_WH
+      SNOWFLAKE_DATABASE: FOOTBALL_ANALYTICS
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: pip install -e "."
+
+      - name: Write Snowflake private key from secret
+        run: |
+          printf '%s' "${{ secrets.SNOWFLAKE_PRIVATE_KEY }}" > "$SNOWFLAKE_PRIVATE_KEY_PATH"
+          chmod 600 "$SNOWFLAKE_PRIVATE_KEY_PATH"
+
+      - name: Run daily ingestion
+        run: python -m football_pipeline --mode daily --competition PL
+
+      - name: Install dbt
+        run: |
+          curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: dbt build
+        working-directory: dbt_football
+        env:
+          DBT_PROFILES_DIR: ${{ github.workspace }}/dbt_football
+        run: |
+          cp profiles.yml.example profiles.yml
+          dbt deps
+          dbt build
+
+      - name: Reconcile derived vs. API standings
+        run: python -m football_pipeline.audit.reconcile --competition PL
+
+      - name: Remove private key
+        if: always()
+        run: rm -f "$SNOWFLAKE_PRIVATE_KEY_PATH"
