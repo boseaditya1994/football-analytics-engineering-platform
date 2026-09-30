@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # fallback for interactive use only.
     snowflake_password: str = Field("", alias="SNOWFLAKE_PASSWORD")
     snowflake_private_key_path: str = Field("", alias="SNOWFLAKE_PRIVATE_KEY_PATH")
+    # Alternative to the path above for hosts with no writable/mountable
+    # file for secrets (e.g. Render env vars): the PEM content itself,
+    # pasted directly into an env var rather than referenced by path.
+    snowflake_private_key: str = Field("", alias="SNOWFLAKE_PRIVATE_KEY")
     snowflake_private_key_passphrase: str = Field(
         "", alias="SNOWFLAKE_PRIVATE_KEY_PASSPHRASE"
     )

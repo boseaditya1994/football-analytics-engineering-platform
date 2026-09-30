@@ -16,10 +16,11 @@ through settings manually).
    - `FOOTBALL_DATA_API_KEY`
    - `SNOWFLAKE_ACCOUNT`
    - `SNOWFLAKE_USER`
+   - `SNOWFLAKE_PRIVATE_KEY` — paste the **full contents** of your local `.snowflake_keys/rsa_key.p8` (the private key file, including the `-----BEGIN PRIVATE KEY-----`/`-----END PRIVATE KEY-----` lines) directly into this env var's value field. Render's env var editor accepts multi-line values.
+     (Render web services don't support a mountable "secret file," unlike GitHub Actions - this project's `connect()` function supports both a file path, for local dev/CI, and this raw-content env var, for hosts like Render. Verified working both ways.)
    - `ALLOWED_ORIGINS` — leave blank for now, or set to `*` temporarily; you'll set it to your real Vercel URL after deploying the frontend (see below). `ALLOWED_ORIGIN_REGEX` is already set in `render.yaml` to allow any `*.vercel.app` domain, so this is a convenience, not a requirement.
-4. Also add a **Secret File**: name `rsa_key.p8`, contents = the full contents of your local `.snowflake_keys/rsa_key.p8` (the private key file). Render mounts it at `/etc/secrets/rsa_key.p8`, matching `SNOWFLAKE_PRIVATE_KEY_PATH` in `render.yaml`.
-5. Deploy. Render will run `pip install -e ".[dashboard]"` then start `uvicorn`.
-6. Once live, note the service URL (something like `https://football-analytics-api.onrender.com`) — the frontend needs it.
+4. Deploy. Render will run `pip install -e ".[dashboard]"` then start `uvicorn`.
+5. Once live, note the service URL (something like `https://football-analytics-api.onrender.com`) — the frontend needs it.
 
 **Free tier note**: Render's free web services spin down after 15 minutes
 of inactivity and take ~30-60s to wake on the next request. Document this

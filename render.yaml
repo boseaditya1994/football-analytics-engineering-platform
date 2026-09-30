@@ -21,11 +21,9 @@ services:
         value: FOOTBALL_ANALYTICS_WH
       - key: SNOWFLAKE_DATABASE
         value: FOOTBALL_ANALYTICS
-      - key: SNOWFLAKE_PRIVATE_KEY_PATH
-        value: /etc/secrets/rsa_key.p8
+      - key: SNOWFLAKE_PRIVATE_KEY
+        sync: false
       - key: ALLOWED_ORIGINS
         sync: false
       - key: ALLOWED_ORIGIN_REGEX
         value: "https://.*\\.vercel\\.app"
-    secretFiles:
-      - name: rsa_key.p8

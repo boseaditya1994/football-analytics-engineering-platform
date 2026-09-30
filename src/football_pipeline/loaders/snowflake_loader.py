@@ -16,10 +16,9 @@ from football_pipeline.config.settings import Settings
 logger = structlog.get_logger(__name__)
 
 
-def _load_private_key_der(path: str, passphrase: str) -> bytes:
-    key_bytes = Path(path).read_bytes()
+def _private_key_der_from_pem(pem_bytes: bytes, passphrase: str) -> bytes:
     private_key = serialization.load_pem_private_key(
-        key_bytes, password=passphrase.encode() if passphrase else None
+        pem_bytes, password=passphrase.encode() if passphrase else None
     )
     return private_key.private_bytes(
         encoding=serialization.Encoding.DER,
@@ -29,15 +28,31 @@ def _load_private_key_der(path: str, passphrase: str) -> bytes:
 
 
 def connect(settings: Settings) -> snowflake.connector.SnowflakeConnection:
-    """Key-pair auth (SNOWFLAKE_PRIVATE_KEY_PATH) is preferred: it doesn't
-    trigger interactive MFA, so it works for non-interactive callers (this
-    pipeline, the dashboard API, CI). Falls back to password auth, which on
-    an MFA-enforced account will prompt for/require Duo approval.
+    """Key-pair auth is preferred: it doesn't trigger interactive MFA, so it
+    works for non-interactive callers (this pipeline, the dashboard API,
+    CI). Falls back to password auth, which on an MFA-enforced account will
+    prompt for/require Duo approval.
+
+    Two ways to supply the key, for different hosting environments:
+    - SNOWFLAKE_PRIVATE_KEY_PATH: a file path (local dev, CI - where a
+      secret can be written to disk before the process starts).
+    - SNOWFLAKE_PRIVATE_KEY: the PEM content itself, for hosts where env
+      vars are the only secret mechanism (e.g. Render, which doesn't
+      support a "secret file" on its web service plan).
     """
+    passphrase = settings.snowflake_private_key_passphrase
+    private_key_der: bytes | None = None
+
     if settings.snowflake_private_key_path:
-        private_key_der = _load_private_key_der(
-            settings.snowflake_private_key_path, settings.snowflake_private_key_passphrase
+        private_key_der = _private_key_der_from_pem(
+            Path(settings.snowflake_private_key_path).read_bytes(), passphrase
         )
+    elif settings.snowflake_private_key:
+        private_key_der = _private_key_der_from_pem(
+            settings.snowflake_private_key.encode(), passphrase
+        )
+
+    if private_key_der is not None:
         return snowflake.connector.connect(
             account=settings.snowflake_account,
             user=settings.snowflake_user,
