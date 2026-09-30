@@ -9,6 +9,8 @@ Free-tier constraints this client is built around:
 
 from __future__ import annotations
 
+from typing import Self
+
 import httpx
 import structlog
 from pydantic import ValidationError
@@ -71,7 +73,7 @@ class FootballDataClient:
     def close(self) -> None:
         self._client.close()
 
-    def __enter__(self) -> FootballDataClient:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc_info: object) -> None:
