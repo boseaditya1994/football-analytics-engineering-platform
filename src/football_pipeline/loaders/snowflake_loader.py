@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -15,10 +16,37 @@ from football_pipeline.config.settings import Settings
 
 logger = structlog.get_logger(__name__)
 
+_PEM_PATTERN = re.compile(
+    r"-----BEGIN (?P<label>[A-Z ]+)-----(?P<body>.*?)-----END (?P=label)-----",
+    re.DOTALL,
+)
+
+
+def _normalize_pem(raw: str) -> bytes:
+    """Rebuilds a well-formed PEM regardless of how its whitespace got
+    mangled in transit (a single-line env var field, a literal "\\n" text
+    sequence instead of a real newline, etc.) - common when a multi-line
+    secret is pasted into a host's env var UI rather than written to a
+    file. Reconstructs standard 64-char-wrapped PEM from just the
+    BEGIN/END markers and the base64 payload between them.
+    """
+    match = _PEM_PATTERN.search(raw)
+    if not match:
+        raise ValueError(
+            "SNOWFLAKE_PRIVATE_KEY does not contain a recognizable "
+            "-----BEGIN/END ... KEY----- block"
+        )
+    label = match.group("label")
+    body = match.group("body").replace("\\n", "\n")
+    body = re.sub(r"\s+", "", body)
+    wrapped = "\n".join(body[i : i + 64] for i in range(0, len(body), 64))
+    return f"-----BEGIN {label}-----\n{wrapped}\n-----END {label}-----\n".encode()
+
 
 def _private_key_der_from_pem(pem_bytes: bytes, passphrase: str) -> bytes:
+    normalized = _normalize_pem(pem_bytes.decode())
     private_key = serialization.load_pem_private_key(
-        pem_bytes, password=passphrase.encode() if passphrase else None
+        normalized, password=passphrase.encode() if passphrase else None
     )
     return private_key.private_bytes(
         encoding=serialization.Encoding.DER,
