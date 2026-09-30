@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: football-analytics-api
+    runtime: python
+    plan: free
+    branch: main
+    buildCommand: pip install -e ".[dashboard]"
+    startCommand: uvicorn dashboards.api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: FOOTBALL_DATA_API_KEY
+        sync: false
+      - key: SNOWFLAKE_ACCOUNT
+        sync: false
+      - key: SNOWFLAKE_USER
+        sync: false
+      - key: SNOWFLAKE_ROLE
+        value: FOOTBALL_ANALYTICS_ROLE
+      - key: SNOWFLAKE_WAREHOUSE
+        value: FOOTBALL_ANALYTICS_WH
+      - key: SNOWFLAKE_DATABASE
+        value: FOOTBALL_ANALYTICS
+      - key: SNOWFLAKE_PRIVATE_KEY_PATH
+        value: /etc/secrets/rsa_key.p8
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: ALLOWED_ORIGIN_REGEX
+        value: "https://.*\\.vercel\\.app"
+    secretFiles:
+      - name: rsa_key.p8

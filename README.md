@@ -155,6 +155,14 @@ The dashboard has been verified end-to-end in a live browser against real
 Snowflake data (see commit history for details); static screenshots can be
 added to `dashboards/screenshots/` — not yet included in this revision.
 
+## Live Deployment
+
+Backend on [Render](https://render.com) (free tier), frontend on
+[Vercel](https://vercel.com) (free tier). See
+[docs/deployment.md](docs/deployment.md) for the setup steps and
+free-tier caveats (Render's free web services sleep after 15 minutes of
+inactivity).
+
 ## Setup
 
 ```bash

@@ -8,8 +8,13 @@ import type {
   Team,
 } from './types'
 
+// Empty by default: the Vite dev server proxies /api to the local backend
+// (see vite.config.ts). In production, set VITE_API_BASE_URL to the
+// deployed backend's origin (e.g. https://football-analytics-api.onrender.com).
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(path)
+  const res = await fetch(`${API_BASE_URL}${path}`)
   if (!res.ok) {
     throw new Error(`Request failed (${res.status}): ${path}`)
   }

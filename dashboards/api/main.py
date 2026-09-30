@@ -9,6 +9,7 @@ Run: uvicorn dashboards.api.main:app --reload --port 8000
 
 from __future__ import annotations
 
+import os
 from contextlib import contextmanager
 from typing import Any
 
@@ -20,9 +21,22 @@ from football_pipeline.loaders.snowflake_loader import connect
 
 app = FastAPI(title="Football Analytics Dashboard API")
 
+# Local dev origins are always allowed; production frontend origin(s) come
+# from ALLOWED_ORIGINS (comma-separated), e.g. "https://my-app.vercel.app".
+_default_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+_extra_origins = [
+    origin.strip()
+    for origin in os.environ.get("ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=_default_origins + _extra_origins,
+    # Vercel gives every preview deploy its own subdomain - allow all of
+    # them for a given project rather than hardcoding one URL that goes
+    # stale on the next preview.
+    allow_origin_regex=os.environ.get("ALLOWED_ORIGIN_REGEX"),
     allow_methods=["GET"],
     allow_headers=["*"],
 )
