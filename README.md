@@ -11,6 +11,9 @@ dashboard, and CI/CD are all built and have each been run end-to-end
 against a real Snowflake account and real football-data.org data — not
 just written and assumed to work.
 
+**Live dashboard**: [football-analytics-engineering-plat.vercel.app](https://football-analytics-engineering-plat.vercel.app)
+(backend API: [football-analytics-api-qcpm.onrender.com](https://football-analytics-api-qcpm.onrender.com))
+
 ## Business Problem
 
 Answer real questions about a competitive football league — how the table
@@ -157,11 +160,16 @@ added to `dashboards/screenshots/` — not yet included in this revision.
 
 ## Live Deployment
 
-Backend on [Render](https://render.com) (free tier), frontend on
-[Vercel](https://vercel.com) (free tier). See
-[docs/deployment.md](docs/deployment.md) for the setup steps and
-free-tier caveats (Render's free web services sleep after 15 minutes of
-inactivity).
+- **Dashboard**: https://football-analytics-engineering-plat.vercel.app ([Vercel](https://vercel.com), free tier)
+- **API backend**: https://football-analytics-api-qcpm.onrender.com ([Render](https://render.com), free tier)
+
+Both verified working end-to-end against real Snowflake data - all four
+dashboard pages (including direct deep links, not just in-app navigation)
+and the API's own JSON responses were checked live, not just deployed and
+assumed correct. See [docs/deployment.md](docs/deployment.md) for the
+setup steps and free-tier caveats (Render's free web services sleep after
+15 minutes of inactivity - the first request after a while can take
+30-60s to wake it up).
 
 ## Setup
 
