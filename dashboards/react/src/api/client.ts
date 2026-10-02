@@ -1,4 +1,5 @@
 import type {
+  Competition,
   GoalAnalysisRow,
   HomeAwayRow,
   LeagueTableRow,
@@ -22,19 +23,30 @@ async function get<T>(path: string): Promise<T> {
 }
 
 export const api = {
-  seasons: () => get<Season[]>('/api/seasons'),
-  teams: () => get<Team[]>('/api/teams'),
-  leagueTable: (season: string) =>
-    get<LeagueTableRow[]>(`/api/league-table?season=${encodeURIComponent(season)}`),
-  progression: (season: string, teamIds?: number[]) => {
-    const qs = teamIds?.length
-      ? `&team_ids=${teamIds.join(',')}`
-      : ''
-    return get<ProgressionRow[]>(`/api/progression?season=${encodeURIComponent(season)}${qs}`)
+  competitions: () => get<Competition[]>('/api/competitions'),
+  seasons: (competition: string) =>
+    get<Season[]>(`/api/seasons?competition=${encodeURIComponent(competition)}`),
+  teams: (competition: string, season?: string) => {
+    const qs = season ? `&season=${encodeURIComponent(season)}` : ''
+    return get<Team[]>(`/api/teams?competition=${encodeURIComponent(competition)}${qs}`)
   },
-  homeAway: (season: string) =>
-    get<HomeAwayRow[]>(`/api/home-away?season=${encodeURIComponent(season)}`),
-  goalAnalysis: (season: string) =>
-    get<GoalAnalysisRow[]>(`/api/goal-analysis?season=${encodeURIComponent(season)}`),
+  leagueTable: (competition: string, season: string) =>
+    get<LeagueTableRow[]>(
+      `/api/league-table?competition=${encodeURIComponent(competition)}&season=${encodeURIComponent(season)}`,
+    ),
+  progression: (competition: string, season: string, teamIds?: number[]) => {
+    const qs = teamIds?.length ? `&team_ids=${teamIds.join(',')}` : ''
+    return get<ProgressionRow[]>(
+      `/api/progression?competition=${encodeURIComponent(competition)}&season=${encodeURIComponent(season)}${qs}`,
+    )
+  },
+  homeAway: (competition: string, season: string) =>
+    get<HomeAwayRow[]>(
+      `/api/home-away?competition=${encodeURIComponent(competition)}&season=${encodeURIComponent(season)}`,
+    ),
+  goalAnalysis: (competition: string, season: string) =>
+    get<GoalAnalysisRow[]>(
+      `/api/goal-analysis?competition=${encodeURIComponent(competition)}&season=${encodeURIComponent(season)}`,
+    ),
   pipelineHealth: () => get<PipelineHealth>('/api/pipeline-health'),
 }

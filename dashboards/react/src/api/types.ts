@@ -1,3 +1,9 @@
+export interface Competition {
+  competition_code: string
+  competition_name: string
+  area_name: string
+}
+
 export interface Season {
   season: string
   season_start_date: string

@@ -81,58 +81,98 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/api/competitions")
+def list_competitions() -> list[dict[str, Any]]:
+    return _query(
+        """
+        SELECT competition_code, competition_name, area_name
+        FROM STAGING.stg_competitions
+        ORDER BY competition_name
+        """
+    )
+
+
 @app.get("/api/seasons")
-def list_seasons() -> list[dict[str, Any]]:
+def list_seasons(competition: str = Query("PL")) -> list[dict[str, Any]]:
     return _query(
         """
         SELECT season, season_start_date, season_end_date, total_matchweeks
         FROM MARTS.dim_season
+        WHERE competition_code = %s
         ORDER BY season DESC
-        """
+        """,
+        (competition,),
     )
 
 
 @app.get("/api/teams")
-def list_teams() -> list[dict[str, Any]]:
+def list_teams(
+    competition: str = Query("PL"), season: str | None = Query(None)
+) -> list[dict[str, Any]]:
+    """Without `season`, returns every team ever seen in this competition
+    (across all ingested seasons). With `season`, scoped to teams that
+    actually played that competition/season - use this for season-aware
+    pickers, since squads change via promotion/relegation/qualification.
+    """
+    if season:
+        return _query(
+            """
+            SELECT DISTINCT t.team_id, t.team_name, t.team_short_name, t.team_tla, t.team_crest_url
+            FROM MARTS.mart_league_table lt
+            JOIN MARTS.dim_team t ON t.team_id = lt.team_id
+            WHERE lt.competition_code = %s AND lt.season = %s
+            ORDER BY t.team_name
+            """,
+            (competition, season),
+        )
     return _query(
         """
-        SELECT team_id, team_name, team_short_name, team_tla, team_crest_url
-        FROM MARTS.dim_team
-        ORDER BY team_name
-        """
+        SELECT DISTINCT t.team_id, t.team_name, t.team_short_name, t.team_tla, t.team_crest_url
+        FROM STAGING.stg_teams st
+        JOIN MARTS.dim_team t ON t.team_id = st.team_id
+        WHERE st.competition_code = %s
+        ORDER BY t.team_name
+        """,
+        (competition,),
     )
 
 
 @app.get("/api/league-table")
-def league_table(season: str = Query(...)) -> list[dict[str, Any]]:
+def league_table(
+    season: str = Query(...), competition: str = Query("PL")
+) -> list[dict[str, Any]]:
     rows = _query(
         """
         SELECT team_id, team_name, team_crest_url, league_position, played_games,
                won, drawn, lost, goals_for, goals_against, goal_difference,
                points, points_per_game, form_last_5
         FROM MARTS.mart_league_table
-        WHERE season = %s
+        WHERE season = %s AND competition_code = %s
         ORDER BY league_position
         """,
-        (season,),
+        (season, competition),
     )
     if not rows:
-        raise HTTPException(status_code=404, detail=f"No league table for season {season}")
+        raise HTTPException(
+            status_code=404, detail=f"No league table for {competition} season {season}"
+        )
     return rows
 
 
 @app.get("/api/progression")
 def league_progression(
-    season: str = Query(...), team_ids: str | None = Query(None)
+    season: str = Query(...),
+    competition: str = Query("PL"),
+    team_ids: str | None = Query(None),
 ) -> list[dict[str, Any]]:
     sql = """
         SELECT p.team_id, t.team_name, p.matchweek, p.league_position, p.points,
                p.position_change
         FROM MARTS.mart_league_progression p
         JOIN MARTS.dim_team t ON t.team_id = p.team_id
-        WHERE p.season = %s
+        WHERE p.season = %s AND p.competition_code = %s
     """
-    params: list[Any] = [season]
+    params: list[Any] = [season, competition]
     if team_ids:
         ids = [int(x) for x in team_ids.split(",") if x.strip()]
         placeholders = ",".join(["%s"] * len(ids))
@@ -143,21 +183,23 @@ def league_progression(
 
 
 @app.get("/api/team-form")
-def team_form(team_id: int = Query(...), season: str = Query(...)) -> list[dict[str, Any]]:
+def team_form(
+    team_id: int = Query(...), season: str = Query(...), competition: str = Query("PL")
+) -> list[dict[str, Any]]:
     return _query(
         """
         SELECT match_id, matchweek, kickoff_utc, result, points, ppg_last_5,
                ppg_last_10, form_last_5
         FROM MARTS.mart_team_form
-        WHERE team_id = %s AND season = %s
+        WHERE team_id = %s AND season = %s AND competition_code = %s
         ORDER BY kickoff_utc
         """,
-        (team_id, season),
+        (team_id, season, competition),
     )
 
 
 @app.get("/api/home-away")
-def home_away(season: str = Query(...)) -> list[dict[str, Any]]:
+def home_away(season: str = Query(...), competition: str = Query("PL")) -> list[dict[str, Any]]:
     return _query(
         """
         SELECT h.team_id, t.team_name, h.home_played, h.home_points, h.home_ppg,
@@ -166,15 +208,17 @@ def home_away(season: str = Query(...)) -> list[dict[str, Any]]:
                h.away_win_pct, h.away_goal_difference
         FROM MARTS.mart_home_away_performance h
         JOIN MARTS.dim_team t ON t.team_id = h.team_id
-        WHERE h.season = %s
+        WHERE h.season = %s AND h.competition_code = %s
         ORDER BY h.home_ppg DESC
         """,
-        (season,),
+        (season, competition),
     )
 
 
 @app.get("/api/goal-analysis")
-def goal_analysis(season: str = Query(...)) -> list[dict[str, Any]]:
+def goal_analysis(
+    season: str = Query(...), competition: str = Query("PL")
+) -> list[dict[str, Any]]:
     return _query(
         """
         SELECT g.team_id, t.team_name, g.played, g.goals_for, g.goals_against,
@@ -183,10 +227,10 @@ def goal_analysis(season: str = Query(...)) -> list[dict[str, Any]]:
                g.matches_failed_to_score, g.failed_to_score_pct
         FROM MARTS.mart_goal_analysis g
         JOIN MARTS.dim_team t ON t.team_id = g.team_id
-        WHERE g.season = %s
+        WHERE g.season = %s AND g.competition_code = %s
         ORDER BY g.goals_for DESC
         """,
-        (season,),
+        (season, competition),
     )
 
 

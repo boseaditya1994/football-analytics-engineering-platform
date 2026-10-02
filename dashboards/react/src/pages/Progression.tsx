@@ -10,47 +10,38 @@ import {
   YAxis,
 } from 'recharts'
 import { api } from '../api/client'
+import { CompetitionPicker } from '../components/CompetitionPicker'
 import { SeasonPicker } from '../components/SeasonPicker'
 import type { ProgressionRow, Team } from '../api/types'
+import { useCompetitions } from '../hooks/useCompetitions'
 import { useSeasons } from '../hooks/useSeasons'
 
 const PALETTE = ['#7c5cff', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899']
 
 export function Progression() {
-  const { seasons, season, setSeason, loading: seasonsLoading } = useSeasons()
-  const [allTeams, setAllTeams] = useState<Team[]>([])
-  const [teamIdsInSeason, setTeamIdsInSeason] = useState<Set<number>>(new Set())
+  const { competitions, competition, setCompetition, loading: competitionsLoading } =
+    useCompetitions()
+  const { seasons, season, setSeason, loading: seasonsLoading } = useSeasons(competition)
+  const [teams, setTeams] = useState<Team[]>([])
   const [selectedTeamIds, setSelectedTeamIds] = useState<number[]>([])
   const [rows, setRows] = useState<ProgressionRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.teams().then(setAllTeams)
-  }, [])
-
-  useEffect(() => {
-    if (!season) return
-    api
-      .leagueTable(season)
-      .then((table) => setTeamIdsInSeason(new Set(table.map((r) => r.team_id))))
-      .catch(() => setTeamIdsInSeason(new Set()))
-    // Team selection doesn't carry over across seasons a team didn't play in.
+    if (!competition || !season) return
+    api.teams(competition, season).then(setTeams)
+    // Team selection doesn't carry over across competitions/seasons a team didn't play in.
     setSelectedTeamIds([])
-  }, [season])
+  }, [competition, season])
 
   useEffect(() => {
     if (!season) return
     setLoading(true)
     api
-      .progression(season, selectedTeamIds.length ? selectedTeamIds : undefined)
+      .progression(competition, season, selectedTeamIds.length ? selectedTeamIds : undefined)
       .then(setRows)
       .finally(() => setLoading(false))
-  }, [season, selectedTeamIds])
-
-  const teams = useMemo(
-    () => allTeams.filter((t) => teamIdsInSeason.has(t.team_id)),
-    [allTeams, teamIdsInSeason],
-  )
+  }, [competition, season, selectedTeamIds])
 
   const chartData = useMemo(() => {
     const byMatchweek = new Map<number, Record<string, number | string>>()
@@ -69,25 +60,32 @@ export function Progression() {
     [rows],
   )
 
+  const maxPosition = teams.length || 20
+
   function toggleTeam(teamId: number) {
     setSelectedTeamIds((prev) =>
       prev.includes(teamId) ? prev.filter((id) => id !== teamId) : [...prev, teamId],
     )
   }
 
-  if (seasonsLoading) return <div className="state-msg">Loading...</div>
+  if (competitionsLoading || seasonsLoading) return <div className="state-msg">Loading...</div>
 
   return (
     <div>
       <div className="page-header">
         <h1>League Table Progression</h1>
         <div className="controls">
+          <CompetitionPicker
+            competitions={competitions}
+            value={competition}
+            onChange={setCompetition}
+          />
           <SeasonPicker seasons={seasons} value={season} onChange={setSeason} />
         </div>
       </div>
 
       <div className="panel">
-        <h2>Select teams to compare (defaults to all 20 if none selected)</h2>
+        <h2>Select teams to compare (defaults to all {teams.length} if none selected)</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {teams.map((t) => (
             <button
@@ -116,7 +114,7 @@ export function Progression() {
               />
               <YAxis
                 reversed
-                domain={[1, 20]}
+                domain={[1, maxPosition]}
                 stroke="#9aa1ae"
                 allowDecimals={false}
                 label={{ value: 'Position', angle: -90, position: 'insideLeft', fill: '#9aa1ae' }}

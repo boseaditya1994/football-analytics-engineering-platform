@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { CompetitionPicker } from '../components/CompetitionPicker'
 import { FormPills } from '../components/FormPills'
 import { SeasonPicker } from '../components/SeasonPicker'
 import type { LeagueTableRow } from '../api/types'
+import { useCompetitions } from '../hooks/useCompetitions'
 import { useSeasons } from '../hooks/useSeasons'
 
 export function Overview() {
-  const { seasons, season, setSeason, loading: seasonsLoading } = useSeasons()
+  const { competitions, competition, setCompetition, loading: competitionsLoading } =
+    useCompetitions()
+  const { seasons, season, setSeason, loading: seasonsLoading } = useSeasons(competition)
   const [table, setTable] = useState<LeagueTableRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -14,23 +18,30 @@ export function Overview() {
     if (!season) return
     setLoading(true)
     api
-      .leagueTable(season)
+      .leagueTable(competition, season)
       .then(setTable)
       .finally(() => setLoading(false))
-  }, [season])
+  }, [competition, season])
 
-  if (seasonsLoading) return <div className="state-msg">Loading...</div>
+  if (competitionsLoading || seasonsLoading) return <div className="state-msg">Loading...</div>
 
   const matchesPlayed = table.reduce((sum, r) => sum + r.played_games, 0) / 2
   const totalGoals = table.reduce((sum, r) => sum + r.goals_for, 0)
   const leader = table[0]
   const topScorer = [...table].sort((a, b) => b.goals_for - a.goals_for)[0]
+  const competitionName =
+    competitions.find((c) => c.competition_code === competition)?.competition_name ?? 'Overview'
 
   return (
     <div>
       <div className="page-header">
-        <h1>EPL Overview</h1>
+        <h1>{competitionName} Overview</h1>
         <div className="controls">
+          <CompetitionPicker
+            competitions={competitions}
+            value={competition}
+            onChange={setCompetition}
+          />
           <SeasonPicker seasons={seasons} value={season} onChange={setSeason} />
         </div>
       </div>
@@ -65,7 +76,7 @@ export function Overview() {
       )}
 
       <div className="panel">
-        <h2>League Table</h2>
+        <h2>{competition === 'PL' ? 'League Table' : 'League Phase Table'}</h2>
         {loading ? (
           <div className="state-msg">Loading league table...</div>
         ) : (

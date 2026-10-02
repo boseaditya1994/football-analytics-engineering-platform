@@ -2,20 +2,22 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { Season } from '../api/types'
 
-export function useSeasons() {
+export function useSeasons(competition: string) {
   const [seasons, setSeasons] = useState<Season[]>([])
   const [season, setSeason] = useState<string>('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!competition) return
+    setLoading(true)
     api
-      .seasons()
+      .seasons(competition)
       .then((rows) => {
         setSeasons(rows)
-        if (rows.length > 0) setSeason(rows[0].season)
+        setSeason(rows.length > 0 ? rows[0].season : '')
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [competition])
 
   return { seasons, season, setSeason, loading }
 }

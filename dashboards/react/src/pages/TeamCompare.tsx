@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { CompetitionPicker } from '../components/CompetitionPicker'
 import { SeasonPicker } from '../components/SeasonPicker'
 import type { GoalAnalysisRow, HomeAwayRow, LeagueTableRow, Team } from '../api/types'
+import { useCompetitions } from '../hooks/useCompetitions'
 import { useSeasons } from '../hooks/useSeasons'
 
 interface TeamStats {
@@ -26,7 +28,9 @@ function StatRow({ label, a, b }: { label: string; a: string | number; b: string
 }
 
 export function TeamCompare() {
-  const { seasons, season, setSeason, loading: seasonsLoading } = useSeasons()
+  const { competitions, competition, setCompetition, loading: competitionsLoading } =
+    useCompetitions()
+  const { seasons, season, setSeason, loading: seasonsLoading } = useSeasons(competition)
   const [teams, setTeams] = useState<Team[]>([])
   const [teamAId, setTeamAId] = useState<number | null>(null)
   const [teamBId, setTeamBId] = useState<number | null>(null)
@@ -34,37 +38,45 @@ export function TeamCompare() {
   const [statsB, setStatsB] = useState<TeamStats>({})
 
   useEffect(() => {
-    api.teams().then((rows) => {
+    if (!competition || !season) return
+    api.teams(competition, season).then((rows) => {
       setTeams(rows)
       if (rows.length >= 2) {
         setTeamAId(rows[0].team_id)
         setTeamBId(rows[1].team_id)
       }
     })
-  }, [])
+  }, [competition, season])
 
   useEffect(() => {
     if (!season) return
-    Promise.all([api.leagueTable(season), api.homeAway(season), api.goalAnalysis(season)]).then(
-      ([table, homeAway, goals]) => {
-        const build = (teamId: number | null): TeamStats => ({
-          table: table.find((r) => r.team_id === teamId),
-          homeAway: homeAway.find((r) => r.team_id === teamId),
-          goals: goals.find((r) => r.team_id === teamId),
-        })
-        setStatsA(build(teamAId))
-        setStatsB(build(teamBId))
-      },
-    )
-  }, [season, teamAId, teamBId])
+    Promise.all([
+      api.leagueTable(competition, season),
+      api.homeAway(competition, season),
+      api.goalAnalysis(competition, season),
+    ]).then(([table, homeAway, goals]) => {
+      const build = (teamId: number | null): TeamStats => ({
+        table: table.find((r) => r.team_id === teamId),
+        homeAway: homeAway.find((r) => r.team_id === teamId),
+        goals: goals.find((r) => r.team_id === teamId),
+      })
+      setStatsA(build(teamAId))
+      setStatsB(build(teamBId))
+    })
+  }, [competition, season, teamAId, teamBId])
 
-  if (seasonsLoading) return <div className="state-msg">Loading...</div>
+  if (competitionsLoading || seasonsLoading) return <div className="state-msg">Loading...</div>
 
   return (
     <div>
       <div className="page-header">
         <h1>Team Comparison</h1>
         <div className="controls">
+          <CompetitionPicker
+            competitions={competitions}
+            value={competition}
+            onChange={setCompetition}
+          />
           <SeasonPicker seasons={seasons} value={season} onChange={setSeason} />
         </div>
       </div>
