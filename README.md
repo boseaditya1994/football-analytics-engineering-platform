@@ -1,9 +1,10 @@
 # Football Analytics Engineering Platform
 
 An end-to-end analytics engineering platform that ingests, models, tests,
-reconciles, and serves football competition data — built on the English
-Premier League, architected to extend to additional leagues and
-competitions without a redesign.
+reconciles, and serves football competition data — covering the English
+Premier League, UEFA Champions League, and Eredivisie, on an architecture
+proven to extend to additional competitions without a redesign (adding
+Eredivisie required zero code changes beyond running the backfill CLI).
 
 **Status: core platform functional and verified against real data.**
 Ingestion, Snowflake, dbt, dimensional modelling, reconciliation, a React
@@ -111,10 +112,13 @@ score") catch malformed data. Reconciliation catches a different class of
 bug — a confidently-wrong transformation that still produces well-formed
 rows: `fact_standing_snapshot` (derived) is checked against the API's own
 reported table, three checks per team per season, results written to
-`AUDIT.RECONCILIATION_AUDIT`. **Real result: 840 checks run, 0 mismatches**,
-across all 4 ingested seasons. Full writeup, including the real join-key
-bug this caught on its first run, in
-[docs/reconciliation.md](docs/reconciliation.md).
+`AUDIT.RECONCILIATION_AUDIT`. **Real results**: Premier League 360
+checks/0 mismatches, Champions League 420 checks/16 explained mismatches
+(a genuine UEFA tie-break edge case, not a bug — see
+[ADR-011](docs/adr/ADR-011-standings-scope-and-multi-competition.md)),
+Eredivisie 216 checks/0 mismatches. Full writeup, including a real
+multi-competition join bug this caught on its first run with combined
+data, in [docs/reconciliation.md](docs/reconciliation.md).
 
 ## Analytics Marts
 
@@ -226,16 +230,20 @@ Stated plainly, not buried:
   source exists for the seasons this project covers. Never approximated.
 - **No live/in-play data** — this is a daily-batch pipeline, described
   accurately as such, never as "real-time."
-- **Single competition (Premier League)** — the schema is multi-league-ready
-  (`competition_code` throughout), but only one competition is actually
-  ingested today.
+- **UEFA tie-break not fully replicated** — standings ties beyond points/goal
+  difference/goals-for (away goals, disciplinary points, club coefficient)
+  aren't resolved the way UEFA competitions do; documented as an accepted
+  scope boundary, see [ADR-011](docs/adr/ADR-011-standings-scope-and-multi-competition.md).
 
 ## Future Enhancements
 
 Event-level/xG analytics (scoped, if ever added, per [ADR-001](docs/adr/ADR-001-data-source.md));
-additional competitions; incremental dbt materializations if data volume
-grows past what a full rebuild handles comfortably (see [ADR-005](docs/adr/ADR-005-dbt-materializations.md));
-a Match Analysis dashboard page; mobile-responsive dashboard layout.
+more competitions (the architecture is proven multi-competition-ready -
+see [docs/data_sources.md](docs/data_sources.md)); incremental dbt
+materializations if data volume grows past what a full rebuild handles
+comfortably (see [ADR-005](docs/adr/ADR-005-dbt-materializations.md));
+a Match Analysis dashboard page; mobile-responsive dashboard layout;
+UEFA's full multi-level tie-break for Champions League ties.
 
 ## Disclaimer
 

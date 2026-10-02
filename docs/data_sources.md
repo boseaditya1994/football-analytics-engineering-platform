@@ -45,6 +45,35 @@ later.
   `/matches` does **not**. The API client's response-envelope validation
   ([`schemas.py`](../src/football_pipeline/api/schemas.py)) reflects the
   actual shapes, verified against live responses.
+- Rate limiting is enforced **per-process**
+  ([`rate_limiter.py`](../src/football_pipeline/api/rate_limiter.py)), not
+  globally across separate invocations. Running several short-lived
+  `python -c "..."` feasibility checks immediately before a `--mode
+  backfill` run (each starting a fresh, empty rate-limiter) caused a real
+  429 even though each individual process respected 10 req/min - the
+  combined request rate across processes didn't. The existing retry/backoff
+  handled it on the next invocation; a shared/persistent rate limiter would
+  be the real fix if this becomes a recurring problem, not implemented
+  since it's only ever bitten manual/interactive use, never the scheduled
+  pipeline (which runs as a single process).
+
+## Competitions ingested
+
+Multiple competitions on the free tier have been verified and ingested -
+not just assumed available because they're "one of the 12":
+
+| Competition | Code | Type | Seasons | Teams/season | Format notes |
+|---|---|---|---|---|---|
+| Premier League | `PL` | League | 2023/24-2026/27 | 20 | Standard single round-robin |
+| UEFA Champions League | `CL` | Cup | 2023/24-2026/27 | 32 (2023/24), 36 (2024/25+) | Group stage (pre-2024) / league phase (2024/25+) plus knockout rounds - see [ADR-011](adr/ADR-011-standings-scope-and-multi-competition.md) for how standings are scoped to the table-eligible portion only |
+| Eredivisie | `DED` | League | 2023/24-2026/27 | 18 | Standard single round-robin |
+
+Adding Eredivisie required **zero code or schema changes** beyond running
+the backfill CLI - a real test that the `competition_code` grain fix (added
+for Champions League) actually generalizes, not just a two-competition
+special case. The dashboard's competition picker is populated dynamically
+from `/api/competitions`, so a newly-ingested competition appears
+automatically.
 
 ## Deferred / not used in MVP
 

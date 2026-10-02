@@ -53,9 +53,18 @@ flowchart LR
 
 ## Real, measured scope (as of this writing)
 
-- 1 competition: English Premier League
-- 4 seasons ingested: 2023/24 - 2026/27 (the free tier's actual limit - see [docs/data_sources.md](data_sources.md))
-- 27 distinct teams across those seasons (promotion/relegation), 1,520 distinct matches
-- 18 dbt models, 65 dbt tests, all passing
-- 38 Python unit tests, all mocked (no live calls in the test suite)
-- 840 reconciliation checks run against real data, 0 mismatches
+- 3 competitions: Premier League, UEFA Champions League, Eredivisie (see
+  [docs/data_sources.md](data_sources.md) for format differences between them)
+- 4 seasons ingested per competition: 2023/24 - 2026/27 (the free tier's
+  actual limit - see [docs/data_sources.md](data_sources.md))
+- 111 distinct teams, 3,391 distinct matches across all three competitions
+- 18 dbt models, 67 dbt tests, all passing
+- 43 Python unit tests, all mocked (no live calls in the test suite)
+- Reconciliation: PL 120 teams/360 checks/0 mismatches, Champions League 140
+  teams/420 checks/16 explained mismatches (see
+  [ADR-011](adr/ADR-011-standings-scope-and-multi-competition.md)),
+  Eredivisie 72 teams/216 checks/0 mismatches
+- Adding Eredivisie as a third competition required zero code or schema
+  changes beyond running the backfill CLI - a real test that the
+  multi-competition grain fix (built for Champions League) actually
+  generalizes
