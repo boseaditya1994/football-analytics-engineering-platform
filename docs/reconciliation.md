@@ -136,7 +136,36 @@ real-world data limitation rather than chased further - the points
 actually determines league position in all but this one goal-difference
 figure.
 
-## Actual results, all four competitions (after both fixes)
+## A real, accepted limitation: AWARDED matches can lag between the API's own endpoints
+
+Adding Ligue 1 surfaced a clearer, more general version of the Bundesliga
+finding above: **`AWARDED` matches are the recurring point where
+football-data.org's own `/matches` and `/standings` endpoints disagree
+with each other** - not a one-off. Three separate instances now:
+
+1. Bundesliga 2024/25, Union Berlin vs. Bochum (goal-difference convention
+   mismatch for the forfeiting team, above).
+2. Ligue 1 2024/25, Montpellier vs. Saint-Étienne - `/matches` records a
+   2-0 away win (Saint-Étienne); `/standings` doesn't reflect that result
+   for *either* team at all (both teams' `played_games`, win/loss record,
+   and goals come out as if the match hadn't happened in one endpoint but
+   had in the other).
+3. Ligue 1 2025/26 (in progress), Toulouse has an `AWARDED` match
+   `/matches` already shows, which `/standings`'s `played_games` count for
+   Toulouse doesn't yet include.
+
+This project's architecture derives standings from `/matches` (the same
+source used for every other derived metric throughout this project, for
+consistency) - when `/standings` hasn't caught up to a specific
+`AWARDED` result yet, a mismatch is the *correct* thing for reconciliation
+to report, not a pipeline bug to fix. There's no way to know from outside
+football-data.org which of its own two endpoints is more current for a
+given contentious match, so this is documented as a real, recurring
+upstream data-consistency characteristic rather than chased with
+speculative "wait N days before counting an AWARDED match" logic that
+would just trade one kind of occasional mismatch for another.
+
+## Actual results, all five competitions (after all fixes)
 
 - **Premier League**: 120 teams checked, 360 checks, **0 mismatches**.
 - **Champions League**: 140 teams checked, 420 checks, 16 mismatches - all
@@ -147,3 +176,6 @@ figure.
 - **Eredivisie**: 72 teams checked, 216 checks, **0 mismatches**.
 - **Bundesliga**: 72 teams checked, 216 checks, 2 mismatches - both the one
   forfeited-match goal-difference case above. Zero unexplained mismatches.
+- **Ligue 1**: 72 teams checked, 216 checks, 4 mismatches - all explained
+  by the `AWARDED`-match endpoint-lag pattern above. Zero unexplained
+  mismatches.

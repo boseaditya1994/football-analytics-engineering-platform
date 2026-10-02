@@ -53,21 +53,24 @@ flowchart LR
 
 ## Real, measured scope (as of this writing)
 
-- 4 competitions: Premier League, UEFA Champions League, Eredivisie,
-  Bundesliga (see [docs/data_sources.md](data_sources.md) for format
-  differences between them)
+- 5 competitions: Premier League, UEFA Champions League, Eredivisie,
+  Bundesliga, Ligue 1 (see [docs/data_sources.md](data_sources.md) for
+  format differences between them)
 - 4 seasons ingested per competition: 2023/24 - 2026/27 (the free tier's
   actual limit - see [docs/data_sources.md](data_sources.md))
-- 128 distinct teams, 4,615 distinct matches across all four competitions
+- 146 distinct teams, 5,839 distinct matches across all five competitions
 - 18 dbt models, 67 dbt tests, all passing
 - 43 Python unit tests, all mocked (no live calls in the test suite)
 - Reconciliation: PL 120 teams/360 checks/0 mismatches, Champions League 140
   teams/420 checks/16 explained mismatches, Eredivisie 72 teams/216
   checks/0 mismatches, Bundesliga 72 teams/216 checks/2 explained
-  mismatches - see [ADR-011](adr/ADR-011-standings-scope-and-multi-competition.md)
-  for what every explained mismatch actually is
-- Adding Eredivisie and Bundesliga as a third and fourth competition
-  required zero code or schema changes beyond running the backfill CLI -
-  a real test that the multi-competition grain fix (built for Champions
-  League) actually generalizes. Bundesliga did surface one genuine gap
-  (excluded AWARDED/forfeited matches), fixed and verified - see ADR-011.
+  mismatches, Ligue 1 72 teams/216 checks/4 explained mismatches - see
+  [ADR-011](adr/ADR-011-standings-scope-and-multi-competition.md) for what
+  every explained mismatch actually is
+- Adding Eredivisie, Bundesliga, and Ligue 1 as a third, fourth, and fifth
+  competition required zero code or schema changes beyond running the
+  backfill CLI - a real test that the multi-competition grain fix (built
+  for Champions League) actually generalizes. Bundesliga and Ligue 1 both
+  surfaced the same genuine, recurring data-consistency characteristic
+  (football-data.org's own `/matches` and `/standings` endpoints can
+  disagree on `AWARDED` matches) - see ADR-011.

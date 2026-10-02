@@ -68,13 +68,14 @@ not just assumed available because they're "one of the 12":
 | UEFA Champions League | `CL` | Cup | 2023/24-2026/27 | 32 (2023/24), 36 (2024/25+) | Group stage (pre-2024) / league phase (2024/25+) plus knockout rounds - see [ADR-011](adr/ADR-011-standings-scope-and-multi-competition.md) for how standings are scoped to the table-eligible portion only |
 | Eredivisie | `DED` | League | 2023/24-2026/27 | 18 | Standard single round-robin |
 | Bundesliga | `BL1` | League | 2023/24-2026/27 | 18 | Standard single round-robin; surfaced a real `AWARDED`-match handling gap - see [ADR-011](adr/ADR-011-standings-scope-and-multi-competition.md) |
+| Ligue 1 | `FL1` | League | 2023/24-2026/27 | 18 | Standard single round-robin; confirmed the `AWARDED`-match endpoint-lag pattern recurs across competitions - see [ADR-011](adr/ADR-011-standings-scope-and-multi-competition.md) |
 
-Adding Eredivisie and Bundesliga required **zero code or schema changes**
-beyond running the backfill CLI - a real test that the `competition_code`
-grain fix (added for Champions League) actually generalizes, not just a
-two-competition special case. The dashboard's competition picker is
-populated dynamically from `/api/competitions`, so a newly-ingested
-competition appears automatically.
+Adding Eredivisie, Bundesliga, and Ligue 1 each required **zero code or
+schema changes** beyond running the backfill CLI - a real test that the
+`competition_code` grain fix (added for Champions League) actually
+generalizes, not just a two-competition special case. The dashboard's
+competition picker is populated dynamically from `/api/competitions`, so
+a newly-ingested competition appears automatically.
 
 ## Deferred / not used in MVP
 

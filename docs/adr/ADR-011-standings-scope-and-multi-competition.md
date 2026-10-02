@@ -93,15 +93,33 @@ dimension that actually determines league position) are correctly
 resolved. See [docs/reconciliation.md](../reconciliation.md) for full
 detail and the real verification numbers across all four competitions.
 
+Adding Ligue 1 (`FL1`) - a fifth competition, again zero schema changes -
+generalized the Bundesliga finding further: `AWARDED` matches are the
+recurring point where football-data.org's own `/matches` and `/standings`
+endpoints disagree with each other, not a one-off. Three separate
+instances now (Bundesliga Union Berlin/Bochum; Ligue 1 Montpellier/
+Saint-Étienne, where `/standings` doesn't reflect the `/matches`-recorded
+result for *either* team; Ligue 1 2025/26 Toulouse, where `/standings`'s
+`played_games` hasn't caught up to an `AWARDED` match `/matches` already
+shows). This project derives standings from `/matches` for consistency
+with every other derived metric; when `/standings` lags behind a specific
+`AWARDED` result, reconciliation correctly flags it - there's no way to
+know from outside the API which endpoint is more current for a given
+contentious match, so this is documented as a recurring upstream
+data-consistency characteristic, not chased with speculative timing logic.
+
 ## Consequences
 
 - A second competition can be added without re-touching this schema again
-  - the grain is now genuinely multi-competition-safe, proven by a third
-    and fourth competition requiring no further schema changes.
-- Reconciliation is stricter and more trustworthy: it caught two real bugs
-  (the join fan-out, and the excluded-AWARDED-matches gap) during this
-  change, which is exactly what it's for.
-- UEFA's full multi-level tie-break and football associations' exact
-  forfeit goal-difference conventions are both explicitly out of scope;
-  documented rather than silently wrong or over-engineered to chase rare
-  edge cases.
+  - the grain is now genuinely multi-competition-safe, proven by a third,
+    fourth, and fifth competition requiring no further schema changes.
+- Reconciliation is stricter and more trustworthy: it caught two real code
+  bugs (the join fan-out, and the excluded-AWARDED-matches gap) and
+  surfaced a genuine, recurring upstream data-consistency characteristic
+  (AWARDED-match endpoint lag) during this change, which is exactly what
+  it's for.
+- UEFA's full multi-level tie-break, football associations' exact forfeit
+  goal-difference conventions, and football-data.org's own endpoint-sync
+  lag on AWARDED matches are all explicitly out of scope; documented
+  rather than silently wrong or over-engineered to chase edge cases this
+  project has no way to resolve from outside the data source.

@@ -35,4 +35,4 @@ models:
 vars:
   # Competition scope for the current build. A list so more competitions can
   # be added later without changing any model SQL.
-  active_competition_codes: ['PL', 'CL', 'DED', 'BL1']
+  active_competition_codes: ['PL', 'CL', 'DED', 'BL1', 'FL1']
