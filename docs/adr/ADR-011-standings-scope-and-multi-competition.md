@@ -66,11 +66,42 @@ this tie-break case or the already-documented in-progress-season
 partial-round comparison (current season, not every team has played the
 same number of games yet).
 
+## Update: a third and fourth competition proved the generalization
+
+Adding Eredivisie (`DED`) required **zero code or schema changes** - just
+running the backfill CLI. `dbt build` passed 85/85 against all three
+competitions combined with no new changes, and the dashboard's competition
+picker (populated dynamically from `/api/competitions`) picked it up
+automatically. This is the real test of whether the grain fix above was a
+genuine generalization or a two-competition special case - it generalizes.
+
+Adding Bundesliga (`BL1`) surfaced one more real gap:
+`int_match_team_performance` only included `match_status = 'FINISHED'`
+matches, silently excluding `AWARDED` matches - forfeits/administrative
+decisions with a real, final scoreline, not an in-progress or voided
+match. A 2024/25 Bundesliga match between Union Berlin and Bochum was
+awarded rather than played to a normal finish; excluding it undercounted
+both teams' points and goal difference against the API's own table. Fixed
+by including `AWARDED` alongside `FINISHED` in the standings-derivation
+input. After the fix, Bochum (credited the win) reconciled perfectly, but
+Union Berlin (the forfeiting team) still shows a goal-difference mismatch
+- a real, documented pattern where football associations apply a
+standardized forfeit goal-difference adjustment to the forfeiting team
+that doesn't always equal the literal recorded scoreline. Accepted as a
+real-world data limitation, not chased further, since points (the
+dimension that actually determines league position) are correctly
+resolved. See [docs/reconciliation.md](../reconciliation.md) for full
+detail and the real verification numbers across all four competitions.
+
 ## Consequences
 
 - A second competition can be added without re-touching this schema again
-  - the grain is now genuinely multi-competition-safe.
-- Reconciliation is stricter and more trustworthy: it caught a real bug in
-  itself during this change, which is exactly what it's for.
-- UEFA's full multi-level tie-break is explicitly out of scope; documented
-  rather than silently wrong or over-engineered to chase a rare edge case.
+  - the grain is now genuinely multi-competition-safe, proven by a third
+    and fourth competition requiring no further schema changes.
+- Reconciliation is stricter and more trustworthy: it caught two real bugs
+  (the join fan-out, and the excluded-AWARDED-matches gap) during this
+  change, which is exactly what it's for.
+- UEFA's full multi-level tie-break and football associations' exact
+  forfeit goal-difference conventions are both explicitly out of scope;
+  documented rather than silently wrong or over-engineered to chase rare
+  edge cases.

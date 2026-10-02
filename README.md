@@ -2,9 +2,10 @@
 
 An end-to-end analytics engineering platform that ingests, models, tests,
 reconciles, and serves football competition data — covering the English
-Premier League, UEFA Champions League, and Eredivisie, on an architecture
-proven to extend to additional competitions without a redesign (adding
-Eredivisie required zero code changes beyond running the backfill CLI).
+Premier League, UEFA Champions League, Eredivisie, and Bundesliga, on an
+architecture proven to extend to additional competitions without a
+redesign (adding Eredivisie and Bundesliga each required zero code changes
+beyond running the backfill CLI).
 
 **Status: core platform functional and verified against real data.**
 Ingestion, Snowflake, dbt, dimensional modelling, reconciliation, a React
@@ -114,11 +115,14 @@ rows: `fact_standing_snapshot` (derived) is checked against the API's own
 reported table, three checks per team per season, results written to
 `AUDIT.RECONCILIATION_AUDIT`. **Real results**: Premier League 360
 checks/0 mismatches, Champions League 420 checks/16 explained mismatches
-(a genuine UEFA tie-break edge case, not a bug — see
-[ADR-011](docs/adr/ADR-011-standings-scope-and-multi-competition.md)),
-Eredivisie 216 checks/0 mismatches. Full writeup, including a real
-multi-competition join bug this caught on its first run with combined
-data, in [docs/reconciliation.md](docs/reconciliation.md).
+(a genuine UEFA tie-break edge case), Eredivisie 216 checks/0 mismatches,
+Bundesliga 216 checks/2 explained mismatches (a forfeited-match
+goal-difference convention this project doesn't fully replicate) — neither
+explained case is a pipeline bug, both documented in
+[ADR-011](docs/adr/ADR-011-standings-scope-and-multi-competition.md). Full
+writeup, including two real bugs this check caught (a multi-competition
+join fan-out, and silently-excluded forfeited matches), in
+[docs/reconciliation.md](docs/reconciliation.md).
 
 ## Analytics Marts
 

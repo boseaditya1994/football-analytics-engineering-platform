@@ -5,7 +5,7 @@
 
 select match_id, winner, full_time_home_goals, full_time_away_goals
 from {{ ref('fact_match') }}
-where match_status = 'FINISHED'
+where match_status in ('FINISHED', 'AWARDED')
   and (
         (full_time_home_goals > full_time_away_goals and winner != 'HOME_TEAM')
      or (full_time_home_goals < full_time_away_goals and winner != 'AWAY_TEAM')

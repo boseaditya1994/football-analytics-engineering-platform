@@ -106,7 +106,37 @@ sequential, adjacent positions. This is an accepted scope boundary, not a
 bug - documented rather than chased with an ever-deeper tie-break chain
 for one rare case. See [ADR-011](adr/ADR-011-standings-scope-and-multi-competition.md).
 
-## Actual results, both competitions (after the fix)
+## A real bug this check caught: adding the Bundesliga
+
+Adding Bundesliga data surfaced a genuine gap: `int_match_team_performance`
+only included matches with `match_status = 'FINISHED'`, silently excluding
+`AWARDED` matches (forfeits/administrative decisions with a real, final
+scoreline - not an in-progress or voided match). A 2024/25 Bundesliga match
+between 1. FC Union Berlin and VfL Bochum was awarded (0-2) rather than
+played to a normal finish; excluding it undercounted both teams' points
+and goal difference versus the API's own table. Fixed by including
+`AWARDED` alongside `FINISHED` in the standings-derivation input (and the
+`assert_winner_matches_score` singular test, for consistency) - see
+[ADR-011](adr/ADR-011-standings-scope-and-multi-competition.md).
+
+## A real, accepted limitation: forfeited-match goal difference conventions
+
+After the `AWARDED`-inclusion fix, Bochum (credited the win) reconciled
+perfectly, but Union Berlin (the forfeiting team) still shows a 2-goal
+goal-difference mismatch at every matchweek from the awarded match onward.
+This matches a real, documented pattern in German football association
+disciplinary rulings: the goal-difference impact applied to the forfeiting
+team's official standings doesn't always equal the literal recorded
+scoreline the API exposes via its `fullTime` score field - associations
+sometimes apply a standardized forfeit adjustment that differs by team.
+This project doesn't have access to whatever specific administrative rule
+produced the API's exact number, so it's documented as an accepted,
+real-world data limitation rather than chased further - the points
+(who gets 3 vs 0) are correctly resolved, which is the dimension that
+actually determines league position in all but this one goal-difference
+figure.
+
+## Actual results, all four competitions (after both fixes)
 
 - **Premier League**: 120 teams checked, 360 checks, **0 mismatches**.
 - **Champions League**: 140 teams checked, 420 checks, 16 mismatches - all
@@ -114,3 +144,6 @@ for one rare case. See [ADR-011](adr/ADR-011-standings-scope-and-multi-competiti
   2026/27, matchweek 1, not every team has played the same number of
   games yet) or the one UEFA tie-break case above. Zero unexplained
   mismatches.
+- **Eredivisie**: 72 teams checked, 216 checks, **0 mismatches**.
+- **Bundesliga**: 72 teams checked, 216 checks, 2 mismatches - both the one
+  forfeited-match goal-difference case above. Zero unexplained mismatches.
