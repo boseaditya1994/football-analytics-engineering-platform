@@ -1,6 +1,6 @@
 {#
-    Grain: one row per team per season - home vs. away split, for the
-    "home/away analytics" dashboard page.
+    Grain: one row per competition per team per season - home vs. away
+    split, for the "home/away analytics" dashboard page.
 #}
 
 with performance as (
@@ -9,6 +9,7 @@ with performance as (
 
 splits as (
     select
+        competition_code,
         team_id,
         season,
         sum(case when is_home then 1 else 0 end)                              as home_played,
@@ -27,10 +28,11 @@ splits as (
         sum(case when not is_home then goals_for else 0 end)                 as away_goals_for,
         sum(case when not is_home then goals_against else 0 end)             as away_goals_against
     from performance
-    group by team_id, season
+    group by competition_code, team_id, season
 )
 
 select
+    competition_code,
     team_id,
     season,
 

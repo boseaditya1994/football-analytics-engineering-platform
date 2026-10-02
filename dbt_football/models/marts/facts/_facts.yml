@@ -42,11 +42,11 @@ models:
                 values: [0, 1, 3]
 
   - name: fact_standing_snapshot
-    description: One row per (season, matchweek, team) - independently-derived standings. See model file header for full grain/key documentation.
+    description: One row per (competition_code, season, matchweek, team) - independently-derived standings. See model file header for full grain/key documentation.
     tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
-            combination_of_columns: ['season', 'matchweek', 'team_id']
+            combination_of_columns: ['competition_code', 'season', 'matchweek', 'team_id']
     columns:
       - name: team_id
         tests:

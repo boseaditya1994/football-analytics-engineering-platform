@@ -65,6 +65,52 @@ If this check ever fails, it means one of:
    with yet (e.g. a match result correction, an awarded/expunged result).
 3. A postponement broke the "every team has played its matchweek-N fixture"
    assumption noted in [docs/data_model.md](data_model.md#standings-derivation-algorithm).
+4. A multi-competition join bug - see below, since this exact thing
+   happened once already.
 
 The `RECONCILIATION_AUDIT` table's `source_value`/`derived_value` columns
 make it possible to tell which of these it is without re-deriving anything.
+
+## A real bug this check caught: adding the Champions League
+
+When Champions League data was first added, `reconcile.py`'s own JOIN
+turned out to have exactly the bug class this feature exists to catch.
+football-data.org reuses season strings across competitions (a team's
+`"2023"` Premier League season and `"2023"` Champions League season are
+both literally the string `"2023"`), and the JOIN from `stg_standings` to
+`fact_standing_snapshot` only filtered `competition_code` on the source
+side, not in the join condition itself. Result: a team's correct CL
+standings got paired against its *unrelated* PL row at the same
+`(season, matchweek)` - reported as a false mismatch (Manchester City's
+CL goal difference of 11 "mismatching" against its PL goal difference of
+13, a comparison that should never have happened).
+
+Diagnosed by hand: computed Man City's CL goal difference directly from
+its six real 2023/24 group-stage matches (18 scored − 7 conceded = 11),
+confirmed it matched both the API and `int_table_progression` exactly,
+then found the actual bug by querying `fact_standing_snapshot` for that
+team/season/matchweek across *all* competitions and seeing both a correct
+CL row and an unrelated PL row the query was silently matching against.
+Fixed by adding `f.competition_code = s.competition_code` to the join -
+see [ADR-011](adr/ADR-011-standings-scope-and-multi-competition.md).
+
+## A real, accepted limitation: UEFA's deeper tie-break
+
+After the join fix, one genuine discrepancy remained: Bayern Munich and
+Real Madrid finished the Champions League 2024/25 league phase tied on
+every criterion this project's standings derivation uses (points, goal
+difference, goals for). UEFA's actual tie-break order goes further (away
+goals, disciplinary points, club coefficient) - data this project doesn't
+have. `RANK()` gives both teams the same position; the API reports
+sequential, adjacent positions. This is an accepted scope boundary, not a
+bug - documented rather than chased with an ever-deeper tie-break chain
+for one rare case. See [ADR-011](adr/ADR-011-standings-scope-and-multi-competition.md).
+
+## Actual results, both competitions (after the fix)
+
+- **Premier League**: 120 teams checked, 360 checks, **0 mismatches**.
+- **Champions League**: 140 teams checked, 420 checks, 16 mismatches - all
+  either the in-progress-current-season partial-round comparison (season
+  2026/27, matchweek 1, not every team has played the same number of
+  games yet) or the one UEFA tie-break case above. Zero unexplained
+  mismatches.

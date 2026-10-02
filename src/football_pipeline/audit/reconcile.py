@@ -47,7 +47,17 @@ select
     f.goal_difference as derived_goal_difference
 from standings s
 join MARTS.fact_standing_snapshot f
-  on f.team_id = s.team_id and f.season = s.season and f.matchweek = s.played_games
+  -- competition_code must be in this join, not just the `standings` CTE's
+  -- WHERE: season strings collide across competitions (a team's "2023" PL
+  -- season and "2023" CL season are both just the string "2023"), so
+  -- without it this fans out and pairs a team's CL standings against its
+  -- unrelated PL fact_standing_snapshot row at the same (season,
+  -- matchweek) - a real bug hit and fixed when CL data was first added;
+  -- see docs/reconciliation.md.
+  on f.competition_code = s.competition_code
+ and f.team_id = s.team_id
+ and f.season = s.season
+ and f.matchweek = s.played_games
 join MARTS.dim_team t on t.team_id = s.team_id
 """
 

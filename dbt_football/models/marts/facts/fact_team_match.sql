@@ -11,6 +11,11 @@
     exists alongside match-grain fact_match: normalizing home/away into
     one row per team avoids every downstream query having to CASE on
     home vs. away.
+
+    Includes every match regardless of stage (league/group AND knockout) -
+    unlike fact_standing_snapshot, which is scoped to table-eligible
+    stages only. Filter on match_stage downstream if knockout-stage
+    matches need to be excluded from an aggregation. See ADR-011.
 #}
 
 select
@@ -18,6 +23,7 @@ select
     competition_code,
     season,
     matchweek,
+    match_stage,
     kickoff_utc,
     kickoff_utc::date as match_date,
     team_id,

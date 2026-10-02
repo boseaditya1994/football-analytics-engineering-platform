@@ -1,9 +1,11 @@
 {#
-    Grain: one row per (season, matchweek, team) - the league table as it
-    stood after that round of matches.
-    Unique key: (season, matchweek, team_id)
+    Grain: one row per (competition_code, season, matchweek, team) - the
+    league/group-stage table as it stood after that round of matches.
+    Scoped to table-eligible stages only (see int_table_progression.sql /
+    ADR-011) - a cup competition's knockout rounds never appear here.
+    Unique key: (competition_code, season, matchweek, team_id)
     Foreign keys: team_id -> dim_team.team_id
-                  (season, matchweek) -> dim_matchweek
+                  (competition_code, season, matchweek) -> dim_matchweek
 
     Independently derived from match results (see
     int_table_progression.sql for the algorithm), NOT copied from
@@ -14,6 +16,7 @@
 #}
 
 select
+    competition_code,
     team_id,
     season,
     as_of_matchweek    as matchweek,
